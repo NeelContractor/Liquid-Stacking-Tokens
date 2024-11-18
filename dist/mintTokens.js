@@ -45,25 +45,46 @@ const mintTokens = (fromAddress, toAddress, amount) => __awaiter(void 0, void 0,
 });
 exports.mintTokens = mintTokens;
 const burnTokens = (fromAddress, toAddress, burnAmount) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("Burning tokens");
-    const associatedTokenAccount = yield (0, spl_token_1.getAssociatedTokenAddress)(mintAddress, payer.publicKey);
-    console.log(`Associated Token Account: ${associatedTokenAccount}`);
-    const transaction = new web3_js_1.Transaction().add((0, spl_token_1.createBurnCheckedInstruction)(associatedTokenAccount, mintAddress, payer.publicKey, burnAmount, 9));
-    const txnSignature = yield (0, web3_js_1.sendAndConfirmTransaction)(connection, transaction, [payer]);
-    console.log(`Burned ${burnAmount} from ${fromAddress}: ${txnSignature}`);
+    try {
+        console.log("Burning tokens");
+        const associatedTokenAccount = yield (0, spl_token_1.getAssociatedTokenAddress)(mintAddress, payer.publicKey);
+        console.log(`Associated Token Account: ${associatedTokenAccount}`);
+        const transaction = new web3_js_1.Transaction().add((0, spl_token_1.createBurnCheckedInstruction)(associatedTokenAccount, mintAddress, payer.publicKey, burnAmount * web3_js_1.LAMPORTS_PER_SOL, 9));
+        const txnSignature = yield (0, web3_js_1.sendAndConfirmTransaction)(connection, transaction, [payer]);
+        console.log(`Burned ${burnAmount} from ${fromAddress}: ${txnSignature}`);
+    }
+    catch (error) {
+        console.error("Error burning tokens:", error);
+        throw error;
+    }
 });
 exports.burnTokens = burnTokens;
 const sendNativeTokens = (fromAddress, toAddress, amount) => __awaiter(void 0, void 0, void 0, function* () {
-    // console.log("Sending native tokens");
-    const to = new web3_js_1.PublicKey(toAddress);
-    const from = new web3_js_1.PublicKey(fromAddress);
-    const solAmount = (amount / LST_RATE);
-    const transaction = new web3_js_1.Transaction().add(web3_js_1.SystemProgram.transfer({
-        fromPubkey: from,
-        toPubkey: to,
-        lamports: solAmount * web3_js_1.LAMPORTS_PER_SOL
-    }));
-    const txnSignature = yield (0, web3_js_1.sendAndConfirmTransaction)(connection, transaction, [payer]);
-    console.log(`Sent ${solAmount} SOLs to ${to}: ${txnSignature}`);
+    try {
+        console.log("Sending native tokens");
+        const from = new web3_js_1.PublicKey(toAddress);
+        console.log("from: ", from);
+        const to = new web3_js_1.PublicKey(fromAddress);
+        console.log("to: ", to);
+        const solAmount = amount / LST_RATE;
+        const lamports = (solAmount * web3_js_1.LAMPORTS_PER_SOL);
+        if (lamports < 1) {
+            console.warn("Amount too small to send. Please sent atleast 1 SOL. Skipping transfer.");
+            return;
+        }
+        console.log("Sol amount to send:", solAmount);
+        console.log("Lamports to send:", lamports);
+        const transaction = new web3_js_1.Transaction().add(web3_js_1.SystemProgram.transfer({
+            fromPubkey: from,
+            toPubkey: to,
+            lamports
+        }));
+        const txnSignature = yield (0, web3_js_1.sendAndConfirmTransaction)(connection, transaction, [payer]);
+        console.log(`Sent ${amount} SOLs to ${to}: ${txnSignature}`);
+    }
+    catch (error) {
+        console.error("Error sending native tokens:", error);
+        throw error;
+    }
 });
 exports.sendNativeTokens = sendNativeTokens;
